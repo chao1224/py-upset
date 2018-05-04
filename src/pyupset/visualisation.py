@@ -9,8 +9,8 @@ from functools import partial
 from matplotlib.patches import Rectangle, Circle
 
 
-def plot(data_dict, *, unique_keys=None, sort_by='size', inters_size_bounds=(0, np.inf),
-         inters_degree_bounds=(1, np.inf), additional_plots=None, query=None):
+def plot(data_dict, unique_keys=None, sort_by='size', inters_size_bounds=(0, np.inf),
+         inters_degree_bounds=(1, np.inf), additional_plots=None, query=None, *args):
     """
     Plots a main set of graph showing intersection size, intersection matrix and the size of base sets. If given,
     additional plots are placed below the main graph.
@@ -35,7 +35,9 @@ def plot(data_dict, *, unique_keys=None, sort_by='size', inters_size_bounds=(0, 
 
     :param query: list of tuples. See below for details.
 
-    :return: dictionary of matplotlib objects, namely the figure and the axes.
+    :return: dictionary of matplotlib objects, namely the figure and the axes, and
+    an array of int (sizes), array of tuples (sets included in intersection), array of tuples (sets
+    excluded from intersection), all filtered and sorted.
 
     :raise ValueError: if no unique_keys are specified and the data frames have no common column names.
 
@@ -50,6 +52,7 @@ def plot(data_dict, *, unique_keys=None, sort_by='size', inters_size_bounds=(0, 
     intersections to highligh must be specified with the names used as keys in the data_dict.
 
     """
+    print('plotting')
     query = [] if query is None else query
     ap = [] if additional_plots is None else additional_plots
     all_columns = unique_keys if unique_keys is not None else __get_all_common_columns(data_dict)
@@ -75,7 +78,7 @@ def plot(data_dict, *, unique_keys=None, sort_by='size', inters_size_bounds=(0, 
         ax = upset.additional_plot(i, plot_kind, data_values, graph_properties, labels=data_vars)
         fig_dict['additional'].append(ax)
 
-    return fig_dict
+    return (fig_dict, ordered_inters_sizes, ordered_in_sets, ordered_out_sets)
 
 
 def __get_all_common_columns(data_dict):
@@ -162,7 +165,7 @@ class UpSetPlot():
         :param additional_plots: list of dictionaries as specified in plot()
         :return: references to the newly created figure and axes
         """
-        fig = plt.figure(figsize=(17, 10.5))
+        fig = plt.figure(figsize=(30, 15))
         if additional_plots:
             main_gs = gridspec.GridSpec(3, 1, hspace=.4)
             topgs = main_gs[:2, 0]
@@ -249,6 +252,7 @@ class UpSetPlot():
                 'names': self.ax_tablenames}
 
     def _table_names_plot(self, sorted_set_names, ylim):
+        print('write names\ta')
         ax = self.ax_tablenames
         ax.set_ylim(ylim)
         xlim = ax.get_xlim()
@@ -257,7 +261,7 @@ class UpSetPlot():
             ax.text(x=1,  # (xlim[1]-xlim[0]/2),
                     y=self.y_values[i],
                     s=name,
-                    fontsize=14,
+                    fontsize=18,
                     clip_on=True,
                     va='center',
                     ha='right',
@@ -318,7 +322,7 @@ class UpSetPlot():
         #                                 ),
         #                 )
 
-        ax.set_xlabel("Set size", fontweight='bold', fontsize=13)
+        ax.set_xlabel("Set size", fontweight='bold', fontsize=15)
 
         return ax.get_ylim()
 
@@ -378,7 +382,7 @@ class UpSetPlot():
         label_vertical_gap = (ylim[1] - ylim[0]) / 60
 
         for x, y in zip(self.x_values, inters_sizes):
-            ax.text(x, y + label_vertical_gap, "%.2g" % y,
+            ax.text(x, y + label_vertical_gap, "%.5g" % y,
                     rotation=90, ha='center', va='bottom')
 
         ax.ticklabel_format(style='sci', axis='y', scilimits=(0, 4))
@@ -390,7 +394,7 @@ class UpSetPlot():
 
         ax.yaxis.grid(True, lw=.25, color='grey', ls=':')
         ax.set_axisbelow(True)
-        ax.set_ylabel("Intersection size", labelpad=6, fontweight='bold', fontsize=13)
+        ax.set_ylabel("Intersection size", labelpad=6, fontweight='bold', fontsize=15)
 
         return ax.get_xlim()
 
@@ -442,7 +446,7 @@ class UpSetPlot():
             ax.scatter(np.repeat(self.x_values[col_num], len(out_y)), out_y, color=self.greys[0], s=300)
             ax.vlines(self.x_values[col_num], min(in_y), max(in_y), lw=3.5, color=self._color_for_query(frozenset(in_sets)))
 
-    def additional_plot(self, ax_index, kind, data_values, graph_args, *, labels=None):
+    def additional_plot(self, ax_index, kind, data_values, graph_args, labels=None, *args):
         """
         Scatter plot (for additional plots).
 
@@ -492,7 +496,7 @@ class UpSetPlot():
 
         for l, text in labels.items():
             getattr(ax, 'set_%slabel' % l)(text, labelpad=3,
-                                           fontweight='bold', fontsize=13) if l in ['x', 'y'] else None
+                                           fontweight='bold', fontsize=15) if l in ['x', 'y'] else None
         return ax
 
 
